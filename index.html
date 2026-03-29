@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chile Nuclear — Operador (Riesgo vs Recompensa)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">☢</div>
+        <div class="brandText">
+          <div class="title">Chile Nuclear</div>
+          <div class="subtitle">Operador RBMK — Riesgo vs Recompensa (ranking local)</div>
+        </div>
+      </div>
+
+      <div class="rightHeader">
+        <div class="userChip" id="userChip">
+          <div class="userName" id="userName">Invitado</div>
+          <button class="btn small" id="switchUserBtn" type="button">Cambiar</button>
+        </div>
+        <button class="btn" id="fullscreenBtn" type="button">Pantalla completa</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <!-- STAGE -->
+      <section class="card stage">
+        <div class="stageHeader">
+          <div class="mission">
+            <div class="missionTitle">REGLA DEL JUEGO</div>
+            <div class="missionText">
+              <b>Más potencia = más puntos</b>. Pero si subes demasiado, el reactor colapsa.
+              <b>COBRA (BANK)</b> cuando creas que estás al límite.
+            </div>
+          </div>
+
+          <div class="statusPill" id="statusPill">
+            <span class="lamp" id="lamp"></span>
+            <span class="statusText" id="statusText">—</span>
+          </div>
+        </div>
+
+        <div class="reactorShell">
+          <div class="crtNoise" aria-hidden="true"></div>
+          <canvas id="reactorCanvas" width="980" height="640"></canvas>
+
+          <div class="overlayHud">
+            <div class="bigRead">
+              <div class="bigReadLabel">POTENCIA</div>
+              <div class="bigReadValue mono" id="powerRead">—</div>
+              <div class="bigReadHint" id="powerHint">—</div>
+            </div>
+
+            <div class="bigRead">
+              <div class="bigReadLabel">TEMP</div>
+              <div class="bigReadValue mono" id="tempRead">—</div>
+              <div class="bigReadHint" id="tempHint">—</div>
+            </div>
+
+            <div class="bigRead">
+              <div class="bigReadLabel">PRESIÓN</div>
+              <div class="bigReadValue mono" id="pressRead">—</div>
+              <div class="bigReadHint" id="pressHint">—</div>
+            </div>
+
+            <div class="bigRead emphasis">
+              <div class="bigReadLabel">PUNTAJE RONDA</div>
+              <div class="bigReadValue mono" id="runScore">0</div>
+              <div class="bigReadHint" id="scoreHint">Sube potencia para puntuar</div>
+            </div>
+          </div>
+
+          <div class="warningBar">
+            <div class="warningLabel">EVENTO</div>
+            <div class="warningText" id="eventText">Operación nominal. Decide cuánto arriesgar.</div>
+          </div>
+        </div>
+
+        <div class="microLearn">
+          <div class="microTag" id="microTag">TIP</div>
+          <div class="microBody" id="microBody">Sube potencia gradualmente. Si entras en AMARILLO, corrige. En ROJO: BANK o SCRAM.</div>
+        </div>
+      </section>
+
+      <!-- SIDE: Controls + Leaderboard -->
+      <aside class="card side">
+        <div class="panel">
+          <div class="panelTitle">Controles</div>
+
+          <div class="controlCard">
+            <div class="controlTitle">Barras (reactividad)</div>
+            <div class="controlSub">Menos inserción = más potencia (y riesgo).</div>
+            <div class="controlRow">
+              <input id="rodsSlider" class="slider" type="range" min="0" max="100" value="55" />
+              <div class="controlValue mono"><span id="rodsPct">55</span>%</div>
+            </div>
+            <div class="keyHint">W/S o ↑/↓ (Shift = más rápido)</div>
+          </div>
+
+          <div class="controlCard">
+            <div class="controlTitle">Refrigeración (flujo)</div>
+            <div class="controlSub">Más flujo baja Temp/Presión, pero si exageras “enfría” la potencia.</div>
+            <div class="controlRow">
+              <input id="coolSlider" class="slider" type="range" min="0" max="100" value="55" />
+              <div class="controlValue mono"><span id="coolPct">55</span>%</div>
+            </div>
+            <div class="keyHint">A/D o ←/→ (Shift = más rápido)</div>
+          </div>
+
+          <div class="controlCard danger">
+            <div class="controlTitle">SCRAM (emergencia)</div>
+            <div class="controlSub">Te salva del colapso, pero “mata” la potencia (menos puntos/seg).</div>
+            <button class="btn primary bigBtn" id="scramBtn" type="button">SCRAM (ESPACIO)</button>
+          </div>
+
+          <div class="controlCard bank">
+            <div class="controlTitle">BANK (COBRAR)</div>
+            <div class="controlSub">Termina la ronda y guarda tu puntaje. Si explota antes, pierdes la ronda.</div>
+            <button class="btn primary bigBtn" id="bankBtn" type="button">BANK (ENTER)</button>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" id="startBtn" type="button">Jugar</button>
+            <button class="btn" id="restartBtn" type="button" disabled>Reiniciar</button>
+          </div>
+
+          <div class="mini">
+            <div class="miniRow"><span>Duración ronda</span><span class="mono" id="durationRead">120s</span></div>
+            <div class="miniRow"><span>Tiempo</span><span class="mono" id="timeLeft">—</span></div>
+            <div class="miniRow"><span>Récord local</span><span class="mono" id="best">0</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panelTitleRow">
+            <div class="panelTitle">Ranking</div>
+            <div class="panelActions">
+              <button class="btn small" id="showAllBtn" type="button">Top</button>
+              <button class="btn small" id="showMeBtn" type="button">Mi historial</button>
+            </div>
+          </div>
+
+          <table class="table" id="leaderboard">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Usuario</th>
+                <th class="right">Puntaje</th>
+              </tr>
+            </thead>
+            <tbody id="lbBody"></tbody>
+          </table>
+
+          <div class="note">
+            Guardado en este computador (modo stand). Para ranking global, se integra backend.
+          </div>
+        </div>
+      </aside>
+
+      <!-- Overlay: Login/End screens -->
+      <div class="overlay" id="overlay">
+        <div class="overlayCard">
+          <div class="overlayTitle" id="overlayTitle">Registro</div>
+          <div class="overlayBody" id="overlayBody">
+            Ingresa un usuario corto para guardar tu puntaje y competir en el ranking.
+          </div>
+
+          <div class="form">
+            <label class="label" for="nickInput">Usuario</label>
+            <input class="input" id="nickInput" maxlength="14" placeholder="ej: TOTI_07" />
+
+            <div class="row">
+              <button class="btn primary" id="loginBtn" type="button">Continuar</button>
+              <button class="btn" id="guestBtn" type="button">Jugar como invitado</button>
+            </div>
+
+            <div class="tiny">
+              Tip: usuario se guarda localmente. Puedes cambiarlo en cualquier momento.
+            </div>
+          </div>
+
+          <div class="overlayActions">
+            <button class="btn" id="overlayClose" type="button">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay hidden" id="endOverlay">
+        <div class="overlayCard">
+          <div class="overlayTitle" id="endTitle">—</div>
+          <div class="overlayBody" id="endBody">—</div>
+          <div class="overlayHint" id="endHint">—</div>
+          <div class="overlayActions">
+            <button class="btn primary" id="playAgainBtn" type="button">Jugar otra vez</button>
+            <button class="btn" id="closeEndBtn" type="button">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <footer class="footer">
+      Mecánica: potencia da puntos; seguridad decide si puedes cobrarlos.
+    </footer>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
